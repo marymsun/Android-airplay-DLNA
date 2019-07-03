@@ -1,0 +1,83 @@
+apply plugin: 'com.android.application'
+
+android {
+    compileSdkVersion 25
+    defaultConfig {
+        applicationId "com.xindawn"
+        minSdkVersion 14
+        targetSdkVersion 21
+        versionCode 1
+        versionName "1.0"
+        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    android {
+        lintOptions {
+            checkReleaseBuilds false
+            // Or, if you prefer, you can continue to check for errors in release builds,
+            // but continue the build even when errors are found:
+            abortOnError false
+        }
+    }
+
+    sourceSets {
+        main {
+            jni.srcDirs = []//禁止gradle 自动编译，使用已经编译好的So库
+            jniLibs.srcDirs = ['src/main/jniLibs','libs']//指向要使用的库文件//的路径，前边的是自己项目的，后边的是第三方的so
+        }
+    }
+
+    useLibrary 'org.apache.http.legacy'
+}
+
+
+tasks.withType(JavaCompile) {
+    compileTask -> compileTask.dependsOn CopyToJniLibs
+}
+task ndkBuild(type: Exec, description: 'Compile JNI source via NDK') {
+    Properties properties = new Properties()
+    properties.load(project.rootProject.file('local.properties').newDataInputStream())
+    def ndkDir = properties.getProperty('ndk.dir')
+    commandLine "$ndkDir\\ndk-build.cmd", "NDK_PROJECT_PATH=$projectDir.absolutePath\\build", "APP_BUILD_SCRIPT=$projectDir.absolutePath\\src\\main\\jni\\Android.mk", "NDK_APPLICATION_MK=$projectDir.absolutePath\\src\\main\\jni\\Application.mk"
+    //你自己的mk文件目录
+}
+
+
+task CopyToJniLibs(type: Copy, /*dependsOn: 'ndkBuild',*/ description: 'copy the native libs to jniLibs') {
+    from fileTree(dir: file(buildDir.absolutePath + '/libs'), include: '**/*.so')
+    into file('src/main/jniLibs')
+}
+
+
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation 'com.android.support:appcompat-v7:25.1.1'
+    testImplementation 'junit:junit:4.12'
+    implementation files('libs/cdi-api.jar')
+    implementation files('libs/http-2.2.1.jar')
+    implementation files('libs/httpclient-4.2.2.jar')
+    implementation files('libs/httpcore-4.2.3.jar')
+    implementation files('libs/javax.annotation_1.0.jar')
+    implementation files('libs/javax.inject.jar')
+    implementation files('libs/javax.servlet-3.0.0.v201103241009.jar')
+    implementation files('libs/jetty-client-8.1.9.v20130131.jar')
+    implementation files('libs/jetty-continuation-8.1.9.v20130131.jar')
+    implementation files('libs/jetty-http-8.1.9.v20130131.jar')
+    implementation files('libs/jetty-io-8.1.9.v20130131.jar')
+    implementation files('libs/jetty-security-8.1.9.v20130131.jar')
+    implementation files('libs/jetty-server-8.1.9.v20130131.jar')
+    implementation files('libs/jetty-servlet-8.1.9.v20130131.jar')
+    implementation files('libs/jetty-util-8.1.9.v20130131.jar')
+    implementation files('libs/seamless-http-1.0-alpha2.jar')
+    implementation files('libs/seamless-util-1.0-alpha2.jar')
+    implementation files('libs/seamless-xml-1.0-alpha2.jar')
+    implementation files('libs/slf4j-api-1.6.1.jar')
+    implementation files('libs/slf4j-jdk14-1.6.1.jar')
+    implementation files('libs/universal-image-loader-1.8.4-with-sources.jar')
+}
